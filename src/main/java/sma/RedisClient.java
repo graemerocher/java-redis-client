@@ -11,6 +11,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -906,14 +907,22 @@ public class RedisClient {
     }
   }
 
-  public ScoredMember[] zrangeWithScores(String key, int start, int end) {
-    String[] strings = strings(sendInline("ZRANGE", key, s(start), s(end)));
-    ScoredMember[] scoredMembers = new ScoredMember[strings.length / 2];
-    for (int i = 0; i < scoredMembers.length; i++) {
-      scoredMembers[i] = new ScoredMember(strings[i * 2], new Double(strings[i * 2 + 1]));
-    }
-    return scoredMembers;
-  }
+  public Map<String, List<String>> 
+  zrangeWithScores(String key, int start, int end) {
+   String[] strings = strings(sendInline("ZRANGE", key, s(start), 
+                                         s(end), "WITHSCORES"));
+   Map<String, List<String>> zset = new HashMap<String, List<String>>();
+   HashMap<String, Boolean> needsInit = new HashMap<String, Boolean>();
+   
+   for (int i = strings.length-1; i >= 0; i--) {
+      if (!needsInit.containsKey(strings[i])) {
+         zset.put(strings[i], new ArrayList<String>());
+         needsInit.put(strings[i], Boolean.TRUE);
+      }
+      zset.get(strings[i]).add(strings[--i]);
+   }
+   return zset;
+ }
 
   /**
    * Return the specified elements of the sorted set at the specified key.

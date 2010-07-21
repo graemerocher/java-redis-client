@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -450,6 +451,16 @@ public class RedisClientTest extends TestCase {
     client.zadd("a", 0.4, "y");
     assertEquals(strings("y", "x"), client.zrange("a", 0, -1));
     assertEquals(strings("x", "y"), client.zrevrange("a", 0, -1));
+  }
+  
+  public void testZrangeWithScores() {
+     assertTrue(client.zrangeWithScores("a", 0, -1).size() == 0);
+     client.zadd("a", 0, "0");
+     client.zadd("a", 1, "1");
+     Map<String, List<String>> zset = client.zrangeWithScores("a", 0, -1);
+     zset.get("1").get(0);
+     assertEquals(zset.get("0").get(0), "0");
+     assertEquals(zset.get("1").get(0), "1");
   }
 
   public void testZrangebyscore() {
