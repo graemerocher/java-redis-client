@@ -471,6 +471,15 @@ public class RedisClientTest extends TestCase {
     assertEquals(strings("y", "z"), client.zrangebyscore("a", 0.1, 9.9));
     assertEquals(strings("z"), client.zrangebyscore("a", 0.1, 9.9, 1, 99));
   }
+  
+  public void testZrangebyscoreWithScores() {
+     assertTrue(client.zrangeWithScores("a", 0, -1).size() == 0);
+     client.zadd("a", 0, "0");
+     client.zadd("a", 1, "1");
+     Map<String, List<String>> zset = client.zrangebyscoreWithScores("a", 0, 0);
+     assertEquals(zset.size(), 1);
+     assertEquals(zset.get("0").get(0), "0");
+  }
 
   public void testZremrangebyrank() {
     assertEquals(0, client.zremrangebyrank("a", 0, 1));
