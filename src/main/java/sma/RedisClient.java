@@ -979,6 +979,17 @@ public class RedisClient {
     return zrangebyscore(key, min, max, -1, -1);
   }
 
+  public String[] zrangebyscoreWithScores(String key, double min, double max, int start, int end) {
+     if (start == -1) {
+       return strings(sendInline("ZRANGEBYSCORE", key, s(min), s(max), "WITHSCORES"));
+     }
+     return strings(sendInline("ZRANGEBYSCORE", new String[]{key, s(min), s(max), "LIMIT", s(start), s(end), "WITHSCORES"}));
+   }
+
+   public String[] zrangebyscoreWithScores(String key, double min, double max) {
+     return zrangebyscoreWithScores(key, min, max, -1, -1);
+   }
+  
   /**
    * Remove all elements in the sorted set at key with rank between start and end.
    * Start and end are 0-based with rank 0 being the element with the lowest score. Both start and end can be negative
