@@ -911,19 +911,23 @@ public class RedisClient {
   zrangeWithScores(String key, int start, int end) {
    String[] strings = strings(sendInline("ZRANGE", key, s(start), 
                                          s(end), "WITHSCORES"));
-   Map<String, List<String>> zset = new HashMap<String, List<String>>();
-   HashMap<String, Boolean> needsInit = new HashMap<String, Boolean>();
-   
-   for (int i = strings.length-1; i >= 0; i--) {
-      if (!needsInit.containsKey(strings[i])) {
-         zset.put(strings[i], new ArrayList<String>());
-         needsInit.put(strings[i], Boolean.TRUE);
-      }
-      zset.get(strings[i]).add(strings[--i]);
-   }
-   return zset;
+   return makeZSetLocal(strings);
  }
 
+ public Map<String, List<String>> makeZSetLocal(String[] strings) {
+    Map<String, List<String>> zset = new HashMap<String, List<String>>();
+    HashMap<String, Boolean> needsInit = new HashMap<String, Boolean>();
+    
+    for (int i = strings.length-1; i >= 0; i--) {
+       if (!needsInit.containsKey(strings[i])) {
+          zset.put(strings[i], new ArrayList<String>());
+          needsInit.put(strings[i], Boolean.TRUE);
+       }
+       zset.get(strings[i]).add(strings[--i]);
+    }
+    return zset;
+ }
+  
   /**
    * Return the specified elements of the sorted set at the specified key.
    * The elements are considered sorted from the lowerest to the highest score when using ZRANGE,
@@ -979,14 +983,14 @@ public class RedisClient {
     return zrangebyscore(key, min, max, -1, -1);
   }
 
-  public String[] zrangebyscoreWithScores(String key, double min, double max, int start, int end) {
+  public Map<String, List<String>> zrangebyscoreWithScores(String key, double min, double max, int start, int end) {
      if (start == -1) {
-       return strings(sendInline("ZRANGEBYSCORE", key, s(min), s(max), "WITHSCORES"));
+       return makeZSetLocal(strings(sendInline("ZRANGEBYSCORE", key, s(min), s(max), "WITHSCORES")));
      }
-     return strings(sendInline("ZRANGEBYSCORE", new String[]{key, s(min), s(max), "LIMIT", s(start), s(end), "WITHSCORES"}));
+     return makeZSetLocal(strings(sendInline("ZRANGEBYSCORE", new String[]{key, s(min), s(max), "LIMIT", s(start), s(end), "WITHSCORES"})));
    }
 
-   public String[] zrangebyscoreWithScores(String key, double min, double max) {
+   public Map<String, List<String>> zrangebyscoreWithScores(String key, double min, double max) {
      return zrangebyscoreWithScores(key, min, max, -1, -1);
    }
   

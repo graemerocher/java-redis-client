@@ -4,3 +4,5 @@ out
 *class
 */bin/*
 target/*
+.DS_Store
+*~
