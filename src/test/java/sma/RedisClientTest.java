@@ -733,14 +733,32 @@ public class RedisClientTest extends TestCase {
         assertEquals(0, otherClient.publish("b", "def"));
 
         assertEquals(new Object[]{"message", "a", "abc"}, client.message());
+        
+        client.unsubscribe();
+        assertEquals(0, otherClient.publish("a", "abc"));
+        assertEquals(0, otherClient.publish("b", "def"));
+        
+        client.subscribe("a");
+        assertEquals(1, otherClient.publish("a", "abc"));
+        assertEquals(0, otherClient.publish("b", "def"));
+
+        assertEquals(new Object[]{"message", "a", "abc"}, client.message());
       } finally {
         otherClient.close();
       }
     } finally {
-      client.unsubscribe();
+       client.unsubscribe();
     }
   }
 
+  public void testSSUS() {
+     client.subscribe("foo");
+     client.subscribe("bar");
+     client.punsubscribe("*");
+     client.subscribe("bar");
+     client.unsubscribe();
+  }
+  
   public void testPublish() throws InterruptedException {
     assertEquals(0, client.publish("a", "hello"));
 
