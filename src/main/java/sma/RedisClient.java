@@ -1395,6 +1395,11 @@ public class RedisClient {
     consumeNotifications((Object[]) sendInline("PSUBSCRIBE", patterns), "psubscribe", patterns.length);
   }
 
+  /*
+   * So technically this can be called with no channels, but don't unless you want the client to be
+   * dead from there on.  It will screw up the pub/sub if you are listening on more than one channel.
+   * Use punsubscribe("*") for now until I fix this.  - Pat Shields
+   */
   public void unsubscribe(String... channels) {
     consumeNotifications((Object[]) sendInline("UNSUBSCRIBE", channels), "unsubscribe", channels.length);
   }
