@@ -1400,13 +1400,14 @@ public class RedisClient {
   }
 
   public void punsubscribe(String... patterns) {
-    consumeNotifications((Object[]) sendInline("PUNSUBSCRIBE", patterns), "unsubscribe", patterns.length);
+    consumeNotifications((Object[]) sendInline("PUNSUBSCRIBE", patterns), "punsubscribe", patterns.length);
   }
 
   private void consumeNotifications(Object[] answer, String type, int length) {
+     String foo = string(answer[0]);
     for (int i = 0; i < length; i++) {
       if (answer == null || !type.equals(string(answer[0]))) {
-        throw new RedisException("invalid " + type + " message");
+        throw new RedisException("invalid " + type + " message: " + string(answer[0]));
       }
       if (i < length - 1) {
         try {
