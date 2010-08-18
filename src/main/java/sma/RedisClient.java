@@ -1300,7 +1300,7 @@ public class RedisClient {
   }
 
   public int sortstore(String key, String dstkey, SortParam... params) {
-    return integer(sort(key, null, params));
+    return integer(sort(key, dstkey, params));
   }
 
   private Object sort(String key, String dstkey, SortParam... params) {
