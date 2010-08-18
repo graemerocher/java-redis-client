@@ -1,0 +1,11 @@
+apply plugin: 'java'
+
+repositories {
+   mavenCentral()
+}
+version = '0.1'
+archivesBaseName = 'java-redis-client'
+
+dependencies {
+    testCompile 'junit:junit:4.8.1'
+}
