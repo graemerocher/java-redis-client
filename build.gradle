@@ -1,4 +1,5 @@
 apply plugin: 'java'
+apply plugin: 'maven'
 
 repositories {
    mavenCentral()
@@ -8,4 +9,19 @@ archivesBaseName = 'java-redis-client'
 
 dependencies {
     testCompile 'junit:junit:4.8.1'
+}
+
+configure(install.repositories.mavenInstaller) {
+    pom.project {
+		groupId "sma"
+    }
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+        repository(url: "file://localhost/repo/") {
+            authentication(userName: "user", password: "pass")
+        }
+        pom.groupId = 'sma'
+    }
 }
