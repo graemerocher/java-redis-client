@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -451,6 +452,16 @@ public class RedisClientTest extends TestCase {
     assertEquals(strings("y", "x"), client.zrange("a", 0, -1));
     assertEquals(strings("x", "y"), client.zrevrange("a", 0, -1));
   }
+  
+  public void testZrangeWithScores() {
+     assertTrue(client.zrangeWithScores("a", 0, -1).size() == 0);
+     client.zadd("a", 0, "0");
+     client.zadd("a", 1, "1");
+     Map<String, List<String>> zset = client.zrangeWithScores("a", 0, -1);
+     zset.get("1").get(0);
+     assertEquals(zset.get("0").get(0), "0");
+     assertEquals(zset.get("1").get(0), "1");
+  }
 
   public void testZrangebyscore() {
     assertEquals(strings(), client.zrangebyscore("a", 0.0, 9.9));
@@ -459,6 +470,15 @@ public class RedisClientTest extends TestCase {
     client.zadd("a", 0.2, "z");
     assertEquals(strings("y", "z"), client.zrangebyscore("a", 0.1, 9.9));
     assertEquals(strings("z"), client.zrangebyscore("a", 0.1, 9.9, 1, 99));
+  }
+  
+  public void testZrangebyscoreWithScores() {
+     assertTrue(client.zrangeWithScores("a", 0, -1).size() == 0);
+     client.zadd("a", 0, "0");
+     client.zadd("a", 1, "1");
+     Map<String, List<String>> zset = client.zrangebyscoreWithScores("a", 0, 0);
+     assertEquals(zset.size(), 1);
+     assertEquals(zset.get("0").get(0), "0");
   }
 
   public void testZremrangebyrank() {
@@ -713,14 +733,32 @@ public class RedisClientTest extends TestCase {
         assertEquals(0, otherClient.publish("b", "def"));
 
         assertEquals(new Object[]{"message", "a", "abc"}, client.message());
+        
+        client.unsubscribe();
+        assertEquals(0, otherClient.publish("a", "abc"));
+        assertEquals(0, otherClient.publish("b", "def"));
+        
+        client.subscribe("a");
+        assertEquals(1, otherClient.publish("a", "abc"));
+        assertEquals(0, otherClient.publish("b", "def"));
+
+        assertEquals(new Object[]{"message", "a", "abc"}, client.message());
       } finally {
         otherClient.close();
       }
     } finally {
-      client.unsubscribe();
+       client.unsubscribe();
     }
   }
 
+  public void testSSUS() {
+     client.subscribe("foo");
+     client.subscribe("bar");
+     client.punsubscribe("*");
+     client.subscribe("bar");
+     client.unsubscribe();
+  }
+  
   public void testPublish() throws InterruptedException {
     assertEquals(0, client.publish("a", "hello"));
 

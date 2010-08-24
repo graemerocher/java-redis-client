@@ -11,6 +11,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -906,15 +907,27 @@ public class RedisClient {
     }
   }
 
-  public ScoredMember[] zrangeWithScores(String key, int start, int end) {
-    String[] strings = strings(sendInline("ZRANGE", key, s(start), s(end)));
-    ScoredMember[] scoredMembers = new ScoredMember[strings.length / 2];
-    for (int i = 0; i < scoredMembers.length; i++) {
-      scoredMembers[i] = new ScoredMember(strings[i * 2], new Double(strings[i * 2 + 1]));
-    }
-    return scoredMembers;
-  }
+  public Map<String, List<String>> 
+  zrangeWithScores(String key, int start, int end) {
+   String[] strings = strings(sendInline("ZRANGE", key, s(start), 
+                                         s(end), "WITHSCORES"));
+   return makeZSetLocal(strings);
+ }
 
+ public Map<String, List<String>> makeZSetLocal(String[] strings) {
+    Map<String, List<String>> zset = new HashMap<String, List<String>>();
+    HashMap<String, Boolean> needsInit = new HashMap<String, Boolean>();
+    
+    for (int i = strings.length-1; i >= 0; i--) {
+       if (!needsInit.containsKey(strings[i])) {
+          zset.put(strings[i], new ArrayList<String>());
+          needsInit.put(strings[i], Boolean.TRUE);
+       }
+       zset.get(strings[i]).add(strings[--i]);
+    }
+    return zset;
+ }
+  
   /**
    * Return the specified elements of the sorted set at the specified key.
    * The elements are considered sorted from the lowerest to the highest score when using ZRANGE,
@@ -970,6 +983,17 @@ public class RedisClient {
     return zrangebyscore(key, min, max, -1, -1);
   }
 
+  public Map<String, List<String>> zrangebyscoreWithScores(String key, double min, double max, int start, int end) {
+     if (start == -1) {
+       return makeZSetLocal(strings(sendInline("ZRANGEBYSCORE", key, s(min), s(max), "WITHSCORES")));
+     }
+     return makeZSetLocal(strings(sendInline("ZRANGEBYSCORE", new String[]{key, s(min), s(max), "LIMIT", s(start), s(end), "WITHSCORES"})));
+   }
+
+   public Map<String, List<String>> zrangebyscoreWithScores(String key, double min, double max) {
+     return zrangebyscoreWithScores(key, min, max, -1, -1);
+   }
+  
   /**
    * Remove all elements in the sorted set at key with rank between start and end.
    * Start and end are 0-based with rank 0 being the element with the lowest score. Both start and end can be negative
@@ -1371,18 +1395,23 @@ public class RedisClient {
     consumeNotifications((Object[]) sendInline("PSUBSCRIBE", patterns), "psubscribe", patterns.length);
   }
 
+  /*
+   * So technically this can be called with no channels, but don't unless you want the client to be
+   * dead from there on.  It will screw up the pub/sub if you are listening on more than one channel.
+   * Use punsubscribe("*") for now until I fix this.  - Pat Shields
+   */
   public void unsubscribe(String... channels) {
     consumeNotifications((Object[]) sendInline("UNSUBSCRIBE", channels), "unsubscribe", channels.length);
   }
 
   public void punsubscribe(String... patterns) {
-    consumeNotifications((Object[]) sendInline("PUNSUBSCRIBE", patterns), "unsubscribe", patterns.length);
+    consumeNotifications((Object[]) sendInline("PUNSUBSCRIBE", patterns), "punsubscribe", patterns.length);
   }
 
   private void consumeNotifications(Object[] answer, String type, int length) {
     for (int i = 0; i < length; i++) {
       if (answer == null || !type.equals(string(answer[0]))) {
-        throw new RedisException("invalid " + type + " message");
+        throw new RedisException("invalid " + type + " message: " + string(answer[0]));
       }
       if (i < length - 1) {
         try {
